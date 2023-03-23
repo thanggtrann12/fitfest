@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 from pid import PIDController
+
 # Open the video stream
 cap = cv2.VideoCapture('write_video_2.avi')
 
+# Initialize the PID controller
 pid = PIDController(Kp=0.1, Ki=0.01, Kd=0.01, setpoint=0)
 
 while True:
@@ -58,27 +60,38 @@ while True:
         lane_center = int((x1 + x2) / 2)
         deviation = lane_center - midpoint
 
-        # Calculate the angle for steering based on the deviation
+        # Calculate the distance from the center of the lane
+        pixels_per_cm = 20  # Example value, replace with your own value
+
+# Calculate the distance from the center of the lane in cm
+        if deviation < 0:
+            distance = abs(deviation) / pixels_per_cm
+            message = "Distance from center to left is {:.2f} cm".format(
+                distance)
+            if distance < 30:
+                print("turn right")
+            else:
+                print("straight")
+        else:
+            distance = deviation / pixels_per_cm
+            message = "Distance from center to right is {:.2f} cm".format(
+                distance)
+            if distance < 30:
+                print("turn left")
+            else:
+                print("straight")
+    # Calculate the angle for steering based on the deviation
         steering_angle = deviation * 0.1
         pidval = pid.update(steering_angle)
-        cv2.putText(frame, str(pidval), (10, 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1)
+
         # Draw the lane lines and the center line on the frame
         cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-        cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-        cv2.line(frame, (lane_center, height - 1),
-                 (lane_center, int(height / 2) + 50), (0, 255, 0), 2)
-
-        cv2.line(frame, (int(midpoint), height),
-                 (int(lane_center), y2), (0, 0, 255), 3)
-
-    # Display the frame
-    cv2.imshow('Lane Detection', frame)
-
-    # Wait for a key press and exit if 'q' is pressed
-    if cv2.waitKey(1) == ord('q'):
-        break
-
-# Release the video stream and close all windows
+        cv2.line(frame, (int(midpoint), height-1),
+                 (lane_center, y2), (0, 0, 255), 3)
+        cv2.putText(frame, message, (50, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+        cv2.imshow('Lane Detection', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 cap.release()
 cv2.destroyAllWindows()
